@@ -1,4 +1,3 @@
-import React from "react";
 import type { ExcalidrawElement } from "./element/types";
 import { convertToExcalidrawElements, Excalidraw } from "./index";
 import { API } from "./tests/helpers/api";
@@ -123,7 +122,7 @@ describe("adding elements to frames", () => {
   ) => {
     describe.skip("when frame is in a layer below", async () => {
       it("should add an element", async () => {
-        API.setElements([frame, rect2]);
+        h.elements = [frame, rect2];
 
         func(frame, rect2);
 
@@ -132,7 +131,7 @@ describe("adding elements to frames", () => {
       });
 
       it("should add elements", async () => {
-        API.setElements([frame, rect2, rect3]);
+        h.elements = [frame, rect2, rect3];
 
         func(frame, rect2);
         func(frame, rect3);
@@ -143,7 +142,7 @@ describe("adding elements to frames", () => {
       });
 
       it("should add elements when there are other other elements in between", async () => {
-        API.setElements([frame, rect1, rect2, rect4, rect3]);
+        h.elements = [frame, rect1, rect2, rect4, rect3];
 
         func(frame, rect2);
         func(frame, rect3);
@@ -154,7 +153,7 @@ describe("adding elements to frames", () => {
       });
 
       it("should add elements when there are other elements in between and the order is reversed", async () => {
-        API.setElements([frame, rect3, rect4, rect2, rect1]);
+        h.elements = [frame, rect3, rect4, rect2, rect1];
 
         func(frame, rect2);
         func(frame, rect3);
@@ -167,7 +166,7 @@ describe("adding elements to frames", () => {
 
     describe.skip("when frame is in a layer above", async () => {
       it("should add an element", async () => {
-        API.setElements([rect2, frame]);
+        h.elements = [rect2, frame];
 
         func(frame, rect2);
 
@@ -176,7 +175,7 @@ describe("adding elements to frames", () => {
       });
 
       it("should add elements", async () => {
-        API.setElements([rect2, rect3, frame]);
+        h.elements = [rect2, rect3, frame];
 
         func(frame, rect2);
         func(frame, rect3);
@@ -187,7 +186,7 @@ describe("adding elements to frames", () => {
       });
 
       it("should add elements when there are other other elements in between", async () => {
-        API.setElements([rect1, rect2, rect4, rect3, frame]);
+        h.elements = [rect1, rect2, rect4, rect3, frame];
 
         func(frame, rect2);
         func(frame, rect3);
@@ -198,7 +197,7 @@ describe("adding elements to frames", () => {
       });
 
       it("should add elements when there are other elements in between and the order is reversed", async () => {
-        API.setElements([rect3, rect4, rect2, rect1, frame]);
+        h.elements = [rect3, rect4, rect2, rect1, frame];
 
         func(frame, rect2);
         func(frame, rect3);
@@ -211,7 +210,7 @@ describe("adding elements to frames", () => {
 
     describe("when frame is in an inner layer", async () => {
       it.skip("should add elements", async () => {
-        API.setElements([rect2, frame, rect3]);
+        h.elements = [rect2, frame, rect3];
 
         func(frame, rect2);
         func(frame, rect3);
@@ -222,7 +221,7 @@ describe("adding elements to frames", () => {
       });
 
       it.skip("should add elements when there are other other elements in between", async () => {
-        API.setElements([rect2, rect1, frame, rect4, rect3]);
+        h.elements = [rect2, rect1, frame, rect4, rect3];
 
         func(frame, rect2);
         func(frame, rect3);
@@ -233,7 +232,7 @@ describe("adding elements to frames", () => {
       });
 
       it.skip("should add elements when there are other elements in between and the order is reversed", async () => {
-        API.setElements([rect3, rect4, frame, rect2, rect1]);
+        h.elements = [rect3, rect4, frame, rect2, rect1];
 
         func(frame, rect2);
         func(frame, rect3);
@@ -254,22 +253,20 @@ describe("adding elements to frames", () => {
 
     const frame = API.createElement({ type: "frame", x: 0, y: 0 });
 
-    API.setElements(
-      reorderElements(
-        [
-          frame,
-          ...convertToExcalidrawElements([
-            {
-              type: containerType,
-              x: 100,
-              y: 100,
-              height: 10,
-              label: { text: "xx" },
-            },
-          ]),
-        ],
-        initialOrder,
-      ),
+    h.elements = reorderElements(
+      [
+        frame,
+        ...convertToExcalidrawElements([
+          {
+            type: containerType,
+            x: 100,
+            y: 100,
+            height: 10,
+            label: { text: "xx" },
+          },
+        ]),
+      ],
+      initialOrder,
     );
 
     assertOrder(h.elements, initialOrder);
@@ -340,7 +337,7 @@ describe("adding elements to frames", () => {
     });
 
     it.skip("should add arrow bound with text when frame is in a layer below", async () => {
-      API.setElements([frame, arrow, text]);
+      h.elements = [frame, arrow, text];
 
       resizeFrameOverElement(frame, arrow);
 
@@ -350,7 +347,7 @@ describe("adding elements to frames", () => {
     });
 
     it("should add arrow bound with text when frame is in a layer above", async () => {
-      API.setElements([arrow, text, frame]);
+      h.elements = [arrow, text, frame];
 
       resizeFrameOverElement(frame, arrow);
 
@@ -360,7 +357,7 @@ describe("adding elements to frames", () => {
     });
 
     it.skip("should add arrow bound with text when frame is in an inner layer", async () => {
-      API.setElements([arrow, frame, text]);
+      h.elements = [arrow, frame, text];
 
       resizeFrameOverElement(frame, arrow);
 
@@ -372,7 +369,7 @@ describe("adding elements to frames", () => {
 
   describe("resizing frame over elements but downwards", async () => {
     it.skip("should add elements when frame is in a layer below", async () => {
-      API.setElements([frame, rect1, rect2, rect3, rect4]);
+      h.elements = [frame, rect1, rect2, rect3, rect4];
 
       resizeFrameOverElement(frame, rect4);
       resizeFrameOverElement(frame, rect3);
@@ -383,7 +380,7 @@ describe("adding elements to frames", () => {
     });
 
     it.skip("should add elements when frame is in a layer above", async () => {
-      API.setElements([rect1, rect2, rect3, rect4, frame]);
+      h.elements = [rect1, rect2, rect3, rect4, frame];
 
       resizeFrameOverElement(frame, rect4);
       resizeFrameOverElement(frame, rect3);
@@ -394,7 +391,7 @@ describe("adding elements to frames", () => {
     });
 
     it.skip("should add elements when frame is in an inner layer", async () => {
-      API.setElements([rect1, rect2, frame, rect3, rect4]);
+      h.elements = [rect1, rect2, frame, rect3, rect4];
 
       resizeFrameOverElement(frame, rect4);
       resizeFrameOverElement(frame, rect3);
@@ -409,7 +406,7 @@ describe("adding elements to frames", () => {
     await commonTestCases(dragElementIntoFrame);
 
     it.skip("should drag element inside, duplicate it and keep it in frame", () => {
-      API.setElements([frame, rect2]);
+      h.elements = [frame, rect2];
 
       dragElementIntoFrame(frame, rect2);
 
@@ -423,7 +420,7 @@ describe("adding elements to frames", () => {
     });
 
     it.skip("should drag element inside, duplicate it and remove it from frame", () => {
-      API.setElements([frame, rect2]);
+      h.elements = [frame, rect2];
 
       dragElementIntoFrame(frame, rect2);
 
@@ -493,7 +490,7 @@ describe("adding elements to frames", () => {
         frameId: frame3.id,
       });
 
-      API.setElements([
+      h.elements = [
         frame1,
         rectangle4,
         rectangle1,
@@ -501,7 +498,7 @@ describe("adding elements to frames", () => {
         frame3,
         rectangle2,
         frame2,
-      ]);
+      ];
 
       API.setSelectedElements([rectangle2]);
 
@@ -544,7 +541,7 @@ describe("adding elements to frames", () => {
         frameId: frame2.id,
       });
 
-      API.setElements([rectangle1, rectangle2, frame1, frame2]);
+      h.elements = [rectangle1, rectangle2, frame1, frame2];
 
       API.setSelectedElements([rectangle2]);
 

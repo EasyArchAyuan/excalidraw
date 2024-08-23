@@ -25,7 +25,6 @@ import type {
   OrderedExcalidrawElement,
   ExcalidrawElbowArrowElement,
   FixedPoint,
-  SceneElementsMap,
 } from "./types";
 
 import type { Bounds } from "./bounds";
@@ -41,7 +40,6 @@ import {
   isElbowArrow,
   isFrameLikeElement,
   isLinearElement,
-  isRectangularElement,
   isTextElement,
 } from "./typeChecks";
 import type { ElementUpdate } from "./mutateElement";
@@ -72,7 +70,6 @@ import {
   vectorToHeading,
   type Heading,
 } from "./heading";
-import { segmentIntersectRectangleElement } from "../../utils/geometry/geometry";
 
 export type SuggestedBinding =
   | NonDeleted<ExcalidrawBindableElement>
@@ -127,6 +124,7 @@ export const bindOrUnbindLinearElement = (
     boundToElementIds,
     unboundFromElementIds,
     elementsMap,
+    scene,
   );
   bindOrUnbindLinearElementEdge(
     linearElement,
@@ -136,6 +134,7 @@ export const bindOrUnbindLinearElement = (
     boundToElementIds,
     unboundFromElementIds,
     elementsMap,
+    scene,
   );
 
   const onlyUnbound = Array.from(unboundFromElementIds).filter(
@@ -162,6 +161,7 @@ const bindOrUnbindLinearElementEdge = (
   // Is mutated
   unboundFromElementIds: Set<ExcalidrawBindableElement["id"]>,
   elementsMap: NonDeletedSceneElementsMap,
+  scene: Scene,
 ): void => {
   // "keep" is for method chaining convenience, a "no-op", so just bail out
   if (bindableElement === "keep") {
@@ -571,7 +571,8 @@ const calculateFocusAndGap = (
 // in explicitly.
 export const updateBoundElements = (
   changedElement: NonDeletedExcalidrawElement,
-  elementsMap: NonDeletedSceneElementsMap | SceneElementsMap,
+  elementsMap: ElementsMap,
+  scene: Scene,
   options?: {
     simultaneouslyUpdated?: readonly ExcalidrawElement[];
     oldSize?: { width: number; height: number };
@@ -657,7 +658,7 @@ export const updateBoundElements = (
     LinearElementEditor.movePoints(
       element,
       updates,
-      elementsMap,
+      scene,
       {
         ...(changedElement.id === element.startBinding?.elementId
           ? { startBinding: bindings.startBinding }
@@ -753,8 +754,7 @@ export const bindPointToSnapToElementOutline = (
   const aabb = bindableElement && aabbForElement(bindableElement);
 
   if (bindableElement && aabb) {
-    // TODO: Dirty hacks until tangents are properly calculated
-    const heading = headingForPointFromElement(bindableElement, aabb, point);
+    // TODO: Dirty hack until tangents are properly calculated
     const intersections = [
       ...intersectElementWithLine(
         bindableElement,
@@ -770,14 +770,18 @@ export const bindPointToSnapToElementOutline = (
         FIXED_BINDING_DISTANCE,
         elementsMap,
       ),
-    ];
+    ].map((i) =>
+      distanceToBindableElement(bindableElement, i, elementsMap) >
+      Math.min(bindableElement.width, bindableElement.height) / 2
+        ? ([-1 * i[0], -1 * i[1]] as Point)
+        : i,
+    );
 
+    const heading = headingForPointFromElement(bindableElement, aabb, point);
     const isVertical =
       compareHeading(heading, HEADING_LEFT) ||
       compareHeading(heading, HEADING_RIGHT);
-    const dist = Math.abs(
-      distanceToBindableElement(bindableElement, point, elementsMap),
-    );
+    const dist = distanceToBindableElement(bindableElement, point, elementsMap);
     const isInner = isVertical
       ? dist < bindableElement.width * -0.1
       : dist < bindableElement.height * -0.1;
@@ -999,7 +1003,7 @@ const updateBoundPoint = (
 
   if (isElbowArrow(linearElement)) {
     const fixedPoint =
-      normalizeFixedPoint(binding.fixedPoint) ??
+      binding.fixedPoint ??
       calculateFixedPointForElbowArrowBinding(
         linearElement,
         bindableElement,
@@ -1112,12 +1116,12 @@ export const calculateFixedPointForElbowArrowBinding = (
   ) as Point;
 
   return {
-    fixedPoint: normalizeFixedPoint([
+    fixedPoint: [
       (nonRotatedSnappedGlobalPoint[0] - hoveredElement.x) /
         hoveredElement.width,
       (nonRotatedSnappedGlobalPoint[1] - hoveredElement.y) /
         hoveredElement.height,
-    ]),
+    ] as [number, number],
   };
 };
 
@@ -1604,10 +1608,6 @@ const intersectElementWithLine = (
   gap: number = 0,
   elementsMap: ElementsMap,
 ): Point[] => {
-  if (isRectangularElement(element)) {
-    return segmentIntersectRectangleElement(element, [a, b], gap);
-  }
-
   const relateToCenter = relativizationToElementCenter(element, elementsMap);
   const aRel = GATransform.apply(relateToCenter, GAPoint.from(a));
   const bRel = GATransform.apply(relateToCenter, GAPoint.from(b));
@@ -2174,8 +2174,7 @@ export const getGlobalFixedPointForBindableElement = (
   fixedPointRatio: [number, number],
   element: ExcalidrawBindableElement,
 ) => {
-  const [fixedX, fixedY] = normalizeFixedPoint(fixedPointRatio);
-
+  const [fixedX, fixedY] = fixedPointRatio;
   return rotatePoint(
     [element.x + element.width * fixedX, element.y + element.height * fixedY],
     getCenterForElement(element),
@@ -2228,17 +2227,4 @@ export const getArrowLocalFixedPoints = (
     LinearElementEditor.pointFromAbsoluteCoords(arrow, startPoint, elementsMap),
     LinearElementEditor.pointFromAbsoluteCoords(arrow, endPoint, elementsMap),
   ];
-};
-
-export const normalizeFixedPoint = <T extends FixedPoint | null>(
-  fixedPoint: T,
-): T extends null ? null : FixedPoint => {
-  // Do not allow a precise 0.5 for fixed point ratio
-  // to avoid jumping arrow heading due to floating point imprecision
-  if (fixedPoint && (fixedPoint[0] === 0.5 || fixedPoint[1] === 0.5)) {
-    return fixedPoint.map((ratio) =>
-      ratio === 0.5 ? 0.5001 : ratio,
-    ) as T extends null ? null : FixedPoint;
-  }
-  return fixedPoint as any as T extends null ? null : FixedPoint;
 };

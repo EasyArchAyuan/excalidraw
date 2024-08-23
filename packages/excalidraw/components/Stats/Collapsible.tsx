@@ -31,11 +31,7 @@ const Collapsible = ({
         {label}
         <InlineIcon icon={open ? collapseUpIcon : collapseDownIcon} />
       </div>
-      {open && (
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {children}
-        </div>
-      )}
+      {open && <>{children}</>}
     </>
   );
 };

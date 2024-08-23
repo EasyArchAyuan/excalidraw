@@ -2,8 +2,8 @@ import React from "react";
 import { DEFAULT_SIDEBAR } from "../../constants";
 import { Excalidraw, Sidebar } from "../../index";
 import {
-  act,
   fireEvent,
+  GlobalTestState,
   queryAllByTestId,
   queryByTestId,
   render,
@@ -11,17 +11,39 @@ import {
   withExcalidrawDimensions,
 } from "../../tests/test-utils";
 import { vi } from "vitest";
-import {
-  assertExcalidrawWithSidebar,
-  assertSidebarDockButton,
-} from "./siderbar.test.helpers";
 
-const toggleSidebar = (
-  ...args: Parameters<typeof window.h.app.toggleSidebar>
-): Promise<boolean> => {
-  return act(() => {
-    return window.h.app.toggleSidebar(...args);
-  });
+export const assertSidebarDockButton = async <T extends boolean>(
+  hasDockButton: T,
+): Promise<
+  T extends false
+    ? { dockButton: null; sidebar: HTMLElement }
+    : { dockButton: HTMLElement; sidebar: HTMLElement }
+> => {
+  const sidebar =
+    GlobalTestState.renderResult.container.querySelector<HTMLElement>(
+      ".sidebar",
+    );
+  expect(sidebar).not.toBe(null);
+  const dockButton = queryByTestId(sidebar!, "sidebar-dock");
+  if (hasDockButton) {
+    expect(dockButton).not.toBe(null);
+    return { dockButton: dockButton!, sidebar: sidebar! } as any;
+  }
+  expect(dockButton).toBe(null);
+  return { dockButton: null, sidebar: sidebar! } as any;
+};
+
+export const assertExcalidrawWithSidebar = async (
+  sidebar: React.ReactNode,
+  name: string,
+  test: () => void,
+) => {
+  await render(
+    <Excalidraw initialData={{ appState: { openSidebar: { name } } }}>
+      {sidebar}
+    </Excalidraw>,
+  );
+  await withExcalidrawDimensions({ width: 1920, height: 1080 }, test);
 };
 
 describe("Sidebar", () => {
@@ -81,7 +103,7 @@ describe("Sidebar", () => {
 
       // toggle sidebar on
       // -------------------------------------------------------------------------
-      expect(await toggleSidebar({ name: "customSidebar" })).toBe(true);
+      expect(window.h.app.toggleSidebar({ name: "customSidebar" })).toBe(true);
 
       await waitFor(() => {
         const node = container.querySelector("#test-sidebar-content");
@@ -90,7 +112,7 @@ describe("Sidebar", () => {
 
       // toggle sidebar off
       // -------------------------------------------------------------------------
-      expect(await toggleSidebar({ name: "customSidebar" })).toBe(false);
+      expect(window.h.app.toggleSidebar({ name: "customSidebar" })).toBe(false);
 
       await waitFor(() => {
         const node = container.querySelector("#test-sidebar-content");
@@ -99,9 +121,9 @@ describe("Sidebar", () => {
 
       // force-toggle sidebar off (=> still hidden)
       // -------------------------------------------------------------------------
-      expect(await toggleSidebar({ name: "customSidebar", force: false })).toBe(
-        false,
-      );
+      expect(
+        window.h.app.toggleSidebar({ name: "customSidebar", force: false }),
+      ).toBe(false);
 
       await waitFor(() => {
         const node = container.querySelector("#test-sidebar-content");
@@ -110,12 +132,12 @@ describe("Sidebar", () => {
 
       // force-toggle sidebar on
       // -------------------------------------------------------------------------
-      expect(await toggleSidebar({ name: "customSidebar", force: true })).toBe(
-        true,
-      );
-      expect(await toggleSidebar({ name: "customSidebar", force: true })).toBe(
-        true,
-      );
+      expect(
+        window.h.app.toggleSidebar({ name: "customSidebar", force: true }),
+      ).toBe(true);
+      expect(
+        window.h.app.toggleSidebar({ name: "customSidebar", force: true }),
+      ).toBe(true);
 
       await waitFor(() => {
         const node = container.querySelector("#test-sidebar-content");
@@ -124,7 +146,9 @@ describe("Sidebar", () => {
 
       // toggle library (= hide custom sidebar)
       // -------------------------------------------------------------------------
-      expect(await toggleSidebar({ name: DEFAULT_SIDEBAR.name })).toBe(true);
+      expect(window.h.app.toggleSidebar({ name: DEFAULT_SIDEBAR.name })).toBe(
+        true,
+      );
 
       await waitFor(() => {
         const node = container.querySelector("#test-sidebar-content");
@@ -137,13 +161,13 @@ describe("Sidebar", () => {
 
       // closing sidebar using `{ name: null }`
       // -------------------------------------------------------------------------
-      expect(await toggleSidebar({ name: "customSidebar" })).toBe(true);
+      expect(window.h.app.toggleSidebar({ name: "customSidebar" })).toBe(true);
       await waitFor(() => {
         const node = container.querySelector("#test-sidebar-content");
         expect(node).not.toBe(null);
       });
 
-      expect(await toggleSidebar({ name: null })).toBe(false);
+      expect(window.h.app.toggleSidebar({ name: null })).toBe(false);
       await waitFor(() => {
         const node = container.querySelector("#test-sidebar-content");
         expect(node).toBe(null);
@@ -297,9 +321,6 @@ describe("Sidebar", () => {
     });
 
     it("shouldn't be user-dockable when only `onDock` supplied w/o `docked`", async () => {
-      // we expect warnings in this test and don't want to pollute stdout
-      const mock = jest.spyOn(console, "warn").mockImplementation(() => {});
-
       await render(
         <Excalidraw
           initialData={{ appState: { openSidebar: { name: "customSidebar" } } }}
@@ -320,8 +341,6 @@ describe("Sidebar", () => {
           await assertSidebarDockButton(false);
         },
       );
-
-      mock.mockRestore();
     });
   });
 
@@ -348,9 +367,9 @@ describe("Sidebar", () => {
           ).toBeNull();
 
           // open library sidebar
-          expect(await toggleSidebar({ name: "custom", tab: "library" })).toBe(
-            true,
-          );
+          expect(
+            window.h.app.toggleSidebar({ name: "custom", tab: "library" }),
+          ).toBe(true);
           expect(
             container.querySelector<HTMLElement>(
               "[role=tabpanel][data-testid=library]",
@@ -358,9 +377,9 @@ describe("Sidebar", () => {
           ).not.toBeNull();
 
           // switch to comments tab
-          expect(await toggleSidebar({ name: "custom", tab: "comments" })).toBe(
-            true,
-          );
+          expect(
+            window.h.app.toggleSidebar({ name: "custom", tab: "comments" }),
+          ).toBe(true);
           expect(
             container.querySelector<HTMLElement>(
               "[role=tabpanel][data-testid=comments]",
@@ -368,9 +387,9 @@ describe("Sidebar", () => {
           ).not.toBeNull();
 
           // toggle sidebar closed
-          expect(await toggleSidebar({ name: "custom", tab: "comments" })).toBe(
-            false,
-          );
+          expect(
+            window.h.app.toggleSidebar({ name: "custom", tab: "comments" }),
+          ).toBe(false);
           expect(
             container.querySelector<HTMLElement>(
               "[role=tabpanel][data-testid=comments]",
@@ -378,9 +397,9 @@ describe("Sidebar", () => {
           ).toBeNull();
 
           // toggle sidebar open
-          expect(await toggleSidebar({ name: "custom", tab: "comments" })).toBe(
-            true,
-          );
+          expect(
+            window.h.app.toggleSidebar({ name: "custom", tab: "comments" }),
+          ).toBe(true);
           expect(
             container.querySelector<HTMLElement>(
               "[role=tabpanel][data-testid=comments]",

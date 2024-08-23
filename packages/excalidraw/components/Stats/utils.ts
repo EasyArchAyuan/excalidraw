@@ -41,8 +41,7 @@ export type StatsInputProperty =
   | "width"
   | "height"
   | "angle"
-  | "fontSize"
-  | "gridStep";
+  | "fontSize";
 
 export const SMALLEST_DELTA = 0.01;
 
@@ -199,7 +198,7 @@ export const resizeElement = (
     }
   }
 
-  updateBoundElements(latestElement, elementsMap, {
+  updateBoundElements(latestElement, elementsMap, scene, {
     oldSize: { width: oldWidth, height: oldHeight },
   });
 
@@ -317,6 +316,6 @@ export const updateBindings = (
       [],
     );
   } else {
-    updateBoundElements(latestElement, elementsMap, options);
+    updateBoundElements(latestElement, elementsMap, scene, options);
   }
 };

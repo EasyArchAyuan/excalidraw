@@ -16,6 +16,7 @@ export default defineConfig({
     // open the browser
     open: true,
   },
+  base: './', // 使用相对路径
   // We need to specify the envDir since now there are no
   //more located in parallel with the vite.config.ts file but in parent dir
   envDir: "../",
@@ -26,10 +27,10 @@ export default defineConfig({
         assetFileNames(chunkInfo) {
           if (chunkInfo?.name?.endsWith(".woff2")) {
             // put on root so we are flexible about the CDN path
-            return "[name]-[hash][extname]";
+            return '[name]-[hash][extname]';
           }
 
-          return "assets/[name]-[hash][extname]";
+          return 'assets/[name]-[hash][extname]';
         },
         // Creating separate chunk for locales except for en and percentages.json so they
         // can be cached at runtime and not merged with
@@ -44,7 +45,7 @@ export default defineConfig({
             // Taking the substring after "locales/"
             return `locales/${id.substring(index + 8)}`;
           }
-        },
+        }
       },
     },
     sourcemap: true,

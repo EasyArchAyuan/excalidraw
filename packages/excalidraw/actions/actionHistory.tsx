@@ -4,7 +4,7 @@ import { ToolButton } from "../components/ToolButton";
 import { t } from "../i18n";
 import type { History } from "../history";
 import { HistoryChangedEvent } from "../history";
-import type { AppClassProperties, AppState } from "../types";
+import type { AppState } from "../types";
 import { KEYS } from "../keys";
 import { arrayToMap } from "../utils";
 import { isWindows } from "../constants";
@@ -13,8 +13,7 @@ import type { Store } from "../store";
 import { StoreAction } from "../store";
 import { useEmitter } from "../hooks/useEmitter";
 
-const executeHistoryAction = (
-  app: AppClassProperties,
+const writeData = (
   appState: Readonly<AppState>,
   updater: () => [SceneElementsMap, AppState] | void,
 ): ActionResult => {
@@ -22,10 +21,7 @@ const executeHistoryAction = (
     !appState.multiElement &&
     !appState.resizingElement &&
     !appState.editingElement &&
-    !appState.newElement &&
-    !appState.selectedElementsAreBeingDragged &&
-    !appState.selectionElement &&
-    !app.flowChartCreator.isCreatingChart
+    !appState.draggingElement
   ) {
     const result = updater();
 
@@ -55,11 +51,12 @@ export const createUndoAction: ActionCreator = (history, store) => ({
   trackEvent: { category: "history" },
   viewMode: false,
   perform: (elements, appState, value, app) =>
-    executeHistoryAction(app, appState, () =>
+    writeData(appState, () =>
       history.undo(
         arrayToMap(elements) as SceneElementsMap, // TODO: #7348 refactor action manager to already include `SceneElementsMap`
         appState,
         store.snapshot,
+        app.scene,
       ),
     ),
   keyTest: (event) =>
@@ -96,11 +93,12 @@ export const createRedoAction: ActionCreator = (history, store) => ({
   trackEvent: { category: "history" },
   viewMode: false,
   perform: (elements, appState, _, app) =>
-    executeHistoryAction(app, appState, () =>
+    writeData(appState, () =>
       history.redo(
         arrayToMap(elements) as SceneElementsMap, // TODO: #7348 refactor action manager to already include `SceneElementsMap`
         appState,
         store.snapshot,
+        app.scene,
       ),
     ),
   keyTest: (event) =>

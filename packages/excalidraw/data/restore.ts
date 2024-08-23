@@ -10,7 +10,12 @@ import type {
   PointBinding,
   StrokeRoundness,
 } from "../element/types";
-import type { AppState, BinaryFiles, LibraryItem } from "../types";
+import type {
+  AppState,
+  BinaryFiles,
+  LibraryItem,
+  NormalizedZoomValue,
+} from "../types";
 import type { ImportedDataState, LegacyAppState } from "./types";
 import {
   getNonDeletedElements,
@@ -34,17 +39,11 @@ import {
   ROUNDNESS,
   DEFAULT_SIDEBAR,
   DEFAULT_ELEMENT_PROPS,
-  DEFAULT_GRID_SIZE,
-  DEFAULT_GRID_STEP,
 } from "../constants";
 import { getDefaultAppState } from "../appState";
 import { LinearElementEditor } from "../element/linearElementEditor";
 import { bumpVersion } from "../element/mutateElement";
-import {
-  getUpdatedTimestamp,
-  isFiniteNumber,
-  updateActiveTool,
-} from "../utils";
+import { getUpdatedTimestamp, updateActiveTool } from "../utils";
 import { arrayToMap } from "../utils";
 import type { MarkOptional, Mutable } from "../utility-types";
 import { detectLineHeight, getContainerElement } from "../element/textElement";
@@ -52,12 +51,6 @@ import { normalizeLink } from "./url";
 import { syncInvalidIndices } from "../fractionalIndex";
 import { getSizeFromPoints } from "../points";
 import { getLineHeight } from "../fonts";
-import { normalizeFixedPoint } from "../element/binding";
-import {
-  getNormalizedGridSize,
-  getNormalizedGridStep,
-  getNormalizedZoom,
-} from "../scene";
 
 type RestoredAppState = Omit<
   AppState,
@@ -113,7 +106,7 @@ const repairBinding = (
     ...binding,
     focus: binding.focus || 0,
     fixedPoint: isElbowArrow(element)
-      ? normalizeFixedPoint(binding.fixedPoint ?? [0, 0])
+      ? binding.fixedPoint ?? ([0, 0] as [number, number])
       : null,
   };
 };
@@ -620,24 +613,19 @@ export const restoreAppState = (
       locked: nextAppState.activeTool.locked ?? false,
     },
     // Migrates from previous version where appState.zoom was a number
-    zoom: {
-      value: getNormalizedZoom(
-        isFiniteNumber(appState.zoom)
-          ? appState.zoom
-          : appState.zoom?.value ?? defaultAppState.zoom.value,
-      ),
-    },
+    zoom:
+      typeof appState.zoom === "number"
+        ? {
+            value: appState.zoom as NormalizedZoomValue,
+          }
+        : appState.zoom?.value
+        ? appState.zoom
+        : defaultAppState.zoom,
     openSidebar:
       // string (legacy)
       typeof (appState.openSidebar as any as string) === "string"
         ? { name: DEFAULT_SIDEBAR.name }
         : nextAppState.openSidebar,
-    gridSize: getNormalizedGridSize(
-      isFiniteNumber(appState.gridSize) ? appState.gridSize : DEFAULT_GRID_SIZE,
-    ),
-    gridStep: getNormalizedGridStep(
-      isFiniteNumber(appState.gridStep) ? appState.gridStep : DEFAULT_GRID_STEP,
-    ),
   };
 };
 

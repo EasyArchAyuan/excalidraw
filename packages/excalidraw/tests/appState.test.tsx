@@ -1,5 +1,5 @@
-import React from "react";
-import { fireEvent, queryByTestId, render, waitFor } from "./test-utils";
+import { queryByTestId, render, waitFor } from "./test-utils";
+
 import { Excalidraw } from "../index";
 import { API } from "./helpers/api";
 import { getDefaultAppState } from "../appState";
@@ -31,7 +31,7 @@ describe("appState", () => {
       expect(h.state.viewBackgroundColor).toBe("#F00");
     });
 
-    await API.drop(
+    API.drop(
       new Blob(
         [
           JSON.stringify({
@@ -69,7 +69,7 @@ describe("appState", () => {
     UI.clickTool("text");
 
     expect(h.state.currentItemFontSize).toBe(30);
-    fireEvent.click(queryByTestId(container, "fontSize-small")!);
+    queryByTestId(container, "fontSize-small")!.click();
     expect(h.state.currentItemFontSize).toBe(16);
 
     const mouse = new Pointer("mouse");

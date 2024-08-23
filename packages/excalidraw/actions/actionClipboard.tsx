@@ -10,7 +10,7 @@ import {
 } from "../clipboard";
 import { actionDeleteSelected } from "./actionDeleteSelected";
 import { exportCanvas, prepareElementsForExport } from "../data/index";
-import { getTextFromElements, isTextElement } from "../element";
+import { isTextElement } from "../element";
 import { t } from "../i18n";
 import { isFirefox } from "../constants";
 import { DuplicateIcon, cutIcon, pngIcon, svgIcon } from "../components/icons";
@@ -239,8 +239,16 @@ export const copyText = register({
       includeBoundTextElement: true,
     });
 
+    const text = selectedElements
+      .reduce((acc: string[], element) => {
+        if (isTextElement(element)) {
+          acc.push(element.text);
+        }
+        return acc;
+      }, [])
+      .join("\n\n");
     try {
-      copyTextToSystemClipboard(getTextFromElements(selectedElements));
+      copyTextToSystemClipboard(text);
     } catch (e) {
       throw new Error(t("errors.copyToSystemClipboardFailed"));
     }

@@ -1,4 +1,3 @@
-import React from "react";
 import ReactDOM from "react-dom";
 import {
   render,
@@ -60,7 +59,7 @@ describe("box-selection", () => {
       height: 50,
     });
 
-    API.setElements([rect1, rect2]);
+    h.elements = [rect1, rect2];
 
     mouse.downAt(175, -20);
     mouse.moveTo(85, 70);
@@ -88,7 +87,7 @@ describe("box-selection", () => {
       fillStyle: "solid",
     });
 
-    API.setElements([rect1]);
+    h.elements = [rect1];
 
     mouse.downAt(75, -20);
     mouse.moveTo(-15, 70);
@@ -133,7 +132,7 @@ describe("inner box-selection", () => {
       width: 50,
       height: 50,
     });
-    API.setElements([rect1, rect2, rect3]);
+    h.elements = [rect1, rect2, rect3];
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       mouse.downAt(40, 40);
       mouse.moveTo(290, 290);
@@ -169,7 +168,7 @@ describe("inner box-selection", () => {
       height: 50,
       groupIds: ["A"],
     });
-    API.setElements([rect1, rect2, rect3]);
+    h.elements = [rect1, rect2, rect3];
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       mouse.downAt(40, 40);
@@ -207,7 +206,7 @@ describe("inner box-selection", () => {
       height: 50,
       groupIds: ["A"],
     });
-    API.setElements([rect1, rect2, rect3]);
+    h.elements = [rect1, rect2, rect3];
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       mouse.downAt(rect2.x - 20, rect2.y - 20);
       mouse.moveTo(rect2.x + rect2.width + 10, rect2.y + rect2.height + 10);
@@ -507,7 +506,7 @@ describe("selectedElementIds stability", () => {
       height: 10,
     });
 
-    API.setElements([rectangle]);
+    h.elements = [rectangle];
 
     const selectedElementIds_1 = h.state.selectedElementIds;
 

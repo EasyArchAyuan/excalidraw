@@ -66,6 +66,7 @@ const resizeElementInGroup = (
   origElement: ExcalidrawElement,
   elementsMap: NonDeletedSceneElementsMap,
   originalElementsMap: ElementsMap,
+  scene: Scene,
 ) => {
   const updates = getResizedUpdates(anchorX, anchorY, scale, origElement);
   const { width: oldWidth, height: oldHeight } = latestElement;
@@ -77,7 +78,7 @@ const resizeElementInGroup = (
   );
   if (boundTextElement) {
     const newFontSize = boundTextElement.fontSize * scale;
-    updateBoundElements(latestElement, elementsMap, {
+    updateBoundElements(latestElement, elementsMap, scene, {
       oldSize: { width: oldWidth, height: oldHeight },
     });
     const latestBoundTextElement = elementsMap.get(boundTextElement.id);
@@ -110,6 +111,7 @@ const resizeGroup = (
   originalElements: ExcalidrawElement[],
   elementsMap: NonDeletedSceneElementsMap,
   originalElementsMap: ElementsMap,
+  scene: Scene,
 ) => {
   // keep aspect ratio for groups
   if (property === "width") {
@@ -133,6 +135,7 @@ const resizeGroup = (
       origElement,
       elementsMap,
       originalElementsMap,
+      scene,
     );
   }
 };
@@ -187,6 +190,7 @@ const handleDimensionChange: DragInputCallbackType<
           originalElements,
           elementsMap,
           originalElementsMap,
+          scene,
         );
       } else {
         const [el] = elementsInUnit;
@@ -292,6 +296,7 @@ const handleDimensionChange: DragInputCallbackType<
         originalElements,
         elementsMap,
         originalElementsMap,
+        scene,
       );
     } else {
       const [el] = elementsInUnit;

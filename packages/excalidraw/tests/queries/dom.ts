@@ -15,5 +15,5 @@ export const updateTextEditor = (
   value: string,
 ) => {
   fireEvent.change(editor, { target: { value } });
-  fireEvent.input(editor);
+  editor.dispatchEvent(new Event("input"));
 };

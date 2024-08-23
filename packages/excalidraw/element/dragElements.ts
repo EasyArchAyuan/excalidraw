@@ -4,12 +4,7 @@ import { getCommonBounds } from "./bounds";
 import { mutateElement } from "./mutateElement";
 import { getPerfectElementSize } from "./sizeHelpers";
 import type { NonDeletedExcalidrawElement } from "./types";
-import type {
-  AppState,
-  NormalizedZoomValue,
-  NullableGridSize,
-  PointerDownState,
-} from "../types";
+import type { AppState, NormalizedZoomValue, PointerDownState } from "../types";
 import { getBoundTextElement, getMinTextElementWidth } from "./textElement";
 import { getGridPoint } from "../math";
 import type Scene from "../scene/Scene";
@@ -31,7 +26,7 @@ export const dragSelectedElements = (
     x: number;
     y: number;
   },
-  gridSize: NullableGridSize,
+  gridSize: AppState["gridSize"],
 ) => {
   if (
     _selectedElements.length === 1 &&
@@ -96,9 +91,14 @@ export const dragSelectedElements = (
         updateElementCoords(pointerDownState, textElement, adjustedOffset);
       }
     }
-    updateBoundElements(element, scene.getElementsMapIncludingDeleted(), {
-      simultaneouslyUpdated: Array.from(elementsToUpdate),
-    });
+    updateBoundElements(
+      element,
+      scene.getElementsMapIncludingDeleted(),
+      scene,
+      {
+        simultaneouslyUpdated: Array.from(elementsToUpdate),
+      },
+    );
   });
 };
 
@@ -106,7 +106,7 @@ const calculateOffset = (
   commonBounds: Bounds,
   dragOffset: { x: number; y: number },
   snapOffset: { x: number; y: number },
-  gridSize: NullableGridSize,
+  gridSize: AppState["gridSize"],
 ): { x: number; y: number } => {
   const [x, y] = commonBounds;
   let nextX = x + dragOffset.x + snapOffset.x;
@@ -160,7 +160,7 @@ export const getDragOffsetXY = (
 };
 
 export const dragNewElement = (
-  newElement: NonDeletedExcalidrawElement,
+  draggingElement: NonDeletedExcalidrawElement,
   elementType: AppState["activeTool"]["type"],
   originX: number,
   originY: number,
@@ -179,7 +179,7 @@ export const dragNewElement = (
     y: number;
   } | null = null,
 ) => {
-  if (shouldMaintainAspectRatio && newElement.type !== "selection") {
+  if (shouldMaintainAspectRatio && draggingElement.type !== "selection") {
     if (widthAspectRatio) {
       height = width / widthAspectRatio;
     } else {
@@ -218,14 +218,17 @@ export const dragNewElement = (
 
   let textAutoResize = null;
 
-  if (isTextElement(newElement)) {
-    height = newElement.height;
+  // NOTE this should apply only to creating text elements, not existing
+  // (once we rewrite appState.draggingElement to actually mean dragging
+  // elements)
+  if (isTextElement(draggingElement)) {
+    height = draggingElement.height;
     const minWidth = getMinTextElementWidth(
       getFontString({
-        fontSize: newElement.fontSize,
-        fontFamily: newElement.fontFamily,
+        fontSize: draggingElement.fontSize,
+        fontFamily: draggingElement.fontFamily,
       }),
-      newElement.lineHeight,
+      draggingElement.lineHeight,
     );
     width = Math.max(width, minWidth);
 
@@ -242,7 +245,7 @@ export const dragNewElement = (
   }
 
   if (width !== 0 && height !== 0) {
-    mutateElement(newElement, {
+    mutateElement(draggingElement, {
       x: newX + (originOffset?.x ?? 0),
       y: newY + (originOffset?.y ?? 0),
       width,

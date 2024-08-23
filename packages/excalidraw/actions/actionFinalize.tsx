@@ -73,8 +73,8 @@ export const actionFinalize = register({
 
     const multiPointElement = appState.multiElement
       ? appState.multiElement
-      : appState.newElement?.type === "freedraw"
-      ? appState.newElement
+      : appState.editingElement?.type === "freedraw"
+      ? appState.editingElement
       : null;
 
     if (multiPointElement) {
@@ -176,8 +176,7 @@ export const actionFinalize = register({
             ? appState.activeTool
             : activeTool,
         activeEmbeddable: null,
-        newElement: null,
-        selectionElement: null,
+        draggingElement: null,
         multiElement: null,
         editingElement: null,
         startBoundElement: null,
@@ -205,7 +204,7 @@ export const actionFinalize = register({
   keyTest: (event, appState) =>
     (event.key === KEYS.ESCAPE &&
       (appState.editingLinearElement !== null ||
-        (!appState.newElement && appState.multiElement === null))) ||
+        (!appState.draggingElement && appState.multiElement === null))) ||
     ((event.key === KEYS.ESCAPE || event.key === KEYS.ENTER) &&
       appState.multiElement !== null),
   PanelComponent: ({ appState, updateData, data }) => (

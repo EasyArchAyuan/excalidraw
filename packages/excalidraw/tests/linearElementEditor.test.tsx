@@ -1,11 +1,9 @@
-import React from "react";
 import ReactDOM from "react-dom";
 import type {
   ExcalidrawElement,
   ExcalidrawLinearElement,
   ExcalidrawTextElementWithContainer,
   FontString,
-  SceneElementsMap,
 } from "../element/types";
 import { Excalidraw, mutateElement } from "../index";
 import { centerPoint } from "../math";
@@ -19,7 +17,7 @@ import { API } from "../tests/helpers/api";
 import type { Point } from "../types";
 import { KEYS } from "../keys";
 import { LinearElementEditor } from "../element/linearElementEditor";
-import { act, queryByTestId, queryByText } from "@testing-library/react";
+import { queryByTestId, queryByText } from "@testing-library/react";
 import {
   getBoundTextElementPosition,
   wrapText,
@@ -29,6 +27,7 @@ import * as textElementUtils from "../element/textElement";
 import { ROUNDNESS, VERTICAL_ALIGN } from "../constants";
 import { vi } from "vitest";
 import { arrayToMap } from "../utils";
+import React from "react";
 
 const renderInteractiveScene = vi.spyOn(
   InteractiveCanvas,
@@ -81,7 +80,7 @@ describe("Test Linear Elements", () => {
       ],
       roundness,
     });
-    API.setElements([line]);
+    h.elements = [line];
 
     mouse.clickAt(p1[0], p1[1]);
     return line;
@@ -109,7 +108,7 @@ describe("Test Linear Elements", () => {
       roundness,
     });
     mutateElement(line, { points: line.points });
-    API.setElements([line]);
+    h.elements = [line];
     mouse.clickAt(p1[0], p1[1]);
     return line;
   };
@@ -787,7 +786,7 @@ describe("Test Linear Elements", () => {
     it("in-editor dragging a line point covered by another element", () => {
       createTwoPointerLinearElement("line");
       const line = h.elements[0] as ExcalidrawLinearElement;
-      API.setElements([
+      h.elements = [
         line,
         API.createElement({
           type: "rectangle",
@@ -798,7 +797,7 @@ describe("Test Linear Elements", () => {
           backgroundColor: "red",
           fillStyle: "solid",
         }),
-      ]);
+      ];
       const dragEndPositionOffset = [100, 100] as const;
       API.setSelectedElements([line]);
       enterLineEditingMode(line, true);
@@ -855,7 +854,7 @@ describe("Test Linear Elements", () => {
         }
       });
       const updatedTextElement = { ...textElement, originalText: text };
-      API.setElements([...elements, updatedTextElement]);
+      h.elements = [...elements, updatedTextElement];
       return { textElement: updatedTextElement, container };
     };
 
@@ -969,13 +968,17 @@ describe("Test Linear Elements", () => {
         target: { value: DEFAULT_TEXT },
       });
 
-      Keyboard.exitTextEditor(editor);
+      await new Promise((r) => setTimeout(r, 0));
+      editor.blur();
       expect(arrow.boundElements).toStrictEqual([
         { id: text.id, type: "text" },
       ]);
-      expect(
-        (h.elements[1] as ExcalidrawTextElementWithContainer).text,
-      ).toMatchSnapshot();
+      expect((h.elements[1] as ExcalidrawTextElementWithContainer).text)
+        .toMatchInlineSnapshot(`
+          "Online whiteboard 
+          collaboration made 
+          easy"
+        `);
     });
 
     it("should bind text to arrow when clicked on arrow and enter pressed", async () => {
@@ -995,16 +998,21 @@ describe("Test Linear Elements", () => {
         ".excalidraw-textEditorContainer > textarea",
       ) as HTMLTextAreaElement;
 
+      await new Promise((r) => setTimeout(r, 0));
+
       fireEvent.change(editor, {
         target: { value: DEFAULT_TEXT },
       });
-      Keyboard.exitTextEditor(editor);
+      editor.blur();
       expect(arrow.boundElements).toStrictEqual([
         { id: textElement.id, type: "text" },
       ]);
-      expect(
-        (h.elements[1] as ExcalidrawTextElementWithContainer).text,
-      ).toMatchSnapshot();
+      expect((h.elements[1] as ExcalidrawTextElementWithContainer).text)
+        .toMatchInlineSnapshot(`
+          "Online whiteboard 
+          collaboration made 
+          easy"
+        `);
     });
 
     it("should not bind text to line when double clicked", async () => {
@@ -1051,7 +1059,11 @@ describe("Test Linear Elements", () => {
           "y": 60,
         }
       `);
-      expect(textElement.text).toMatchSnapshot();
+      expect(textElement.text).toMatchInlineSnapshot(`
+        "Online whiteboard 
+        collaboration made 
+        easy"
+      `);
       expect(
         LinearElementEditor.getElementAbsoluteCoords(
           container,
@@ -1091,9 +1103,11 @@ describe("Test Linear Elements", () => {
           "y": 45,
         }
       `);
-      expect(
-        (h.elements[1] as ExcalidrawTextElementWithContainer).text,
-      ).toMatchSnapshot();
+      expect((h.elements[1] as ExcalidrawTextElementWithContainer).text)
+        .toMatchInlineSnapshot(`
+          "Online whiteboard 
+          collaboration made easy"
+        `);
       expect(
         LinearElementEditor.getElementAbsoluteCoords(
           container,
@@ -1129,7 +1143,11 @@ describe("Test Linear Elements", () => {
             "y": 10,
           }
         `);
-      expect(textElement.text).toMatchSnapshot();
+      expect(textElement.text).toMatchInlineSnapshot(`
+        "Online whiteboard 
+        collaboration made 
+        easy"
+      `);
       const points = LinearElementEditor.getPointsGlobalCoordinates(
         container,
         elementsMap,
@@ -1153,7 +1171,10 @@ describe("Test Linear Elements", () => {
             "y": -5,
           }
         `);
-      expect(textElement.text).toMatchSnapshot();
+      expect(textElement.text).toMatchInlineSnapshot(`
+        "Online whiteboard 
+        collaboration made easy"
+      `);
     });
 
     it("should not render vertical align tool when element selected", () => {
@@ -1186,8 +1207,9 @@ describe("Test Linear Elements", () => {
       const editor = document.querySelector(
         ".excalidraw-textEditorContainer > textarea",
       ) as HTMLTextAreaElement;
+      await new Promise((r) => setTimeout(r, 0));
       fireEvent.change(editor, { target: { value: DEFAULT_TEXT } });
-      Keyboard.exitTextEditor(editor);
+      editor.blur();
 
       const textElement = h.elements[2] as ExcalidrawTextElementWithContainer;
 
@@ -1201,7 +1223,10 @@ describe("Test Linear Elements", () => {
           font,
           getBoundTextMaxWidth(arrow, null),
         ),
-      ).toMatchSnapshot();
+      ).toMatchInlineSnapshot(`
+        "Online whiteboard 
+        collaboration made easy"
+      `);
       const handleBindTextResizeSpy = vi.spyOn(
         textElementUtils,
         "handleBindTextResize",
@@ -1227,7 +1252,11 @@ describe("Test Linear Elements", () => {
           font,
           getBoundTextMaxWidth(arrow, null),
         ),
-      ).toMatchSnapshot();
+      ).toMatchInlineSnapshot(`
+        "Online whiteboard 
+        collaboration made 
+        easy"
+      `);
     });
 
     it("should not render horizontal align tool when element selected", () => {
@@ -1251,7 +1280,7 @@ describe("Test Linear Elements", () => {
       expect(text.x).toBe(0);
       expect(text.y).toBe(0);
 
-      API.setElements([h.elements[0], text]);
+      h.elements = [h.elements[0], text];
 
       const container = h.elements[0];
       API.setSelectedElements([container, text]);
@@ -1329,25 +1358,20 @@ describe("Test Linear Elements", () => {
       const line = createThreePointerLinearElement("arrow");
       const [origStartX, origStartY] = [line.x, line.y];
 
-      act(() => {
-        LinearElementEditor.movePoints(
-          line,
-          [
-            {
-              index: 0,
-              point: [line.points[0][0] + 10, line.points[0][1] + 10],
-            },
-            {
-              index: line.points.length - 1,
-              point: [
-                line.points[line.points.length - 1][0] - 10,
-                line.points[line.points.length - 1][1] - 10,
-              ],
-            },
-          ],
-          new Map() as SceneElementsMap,
-        );
-      });
+      LinearElementEditor.movePoints(
+        line,
+        [
+          { index: 0, point: [line.points[0][0] + 10, line.points[0][1] + 10] },
+          {
+            index: line.points.length - 1,
+            point: [
+              line.points[line.points.length - 1][0] - 10,
+              line.points[line.points.length - 1][1] - 10,
+            ],
+          },
+        ],
+        h.scene,
+      );
       expect(line.x).toBe(origStartX + 10);
       expect(line.y).toBe(origStartY + 10);
 

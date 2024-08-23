@@ -1,4 +1,3 @@
-import React from "react";
 import ReactDOM from "react-dom";
 import { Excalidraw } from "../index";
 import * as StaticScene from "../renderer/staticScene";

@@ -21,7 +21,6 @@ import type {
   ExcalidrawElementType,
   ExcalidrawIframeLikeElement,
   OrderedExcalidrawElement,
-  ExcalidrawNonSelectionElement,
 } from "./element/types";
 import type { Action } from "./actions/types";
 import type { Point as RoughPoint } from "roughjs/bin/geometry";
@@ -40,7 +39,7 @@ import type { FileSystemHandle } from "./data/filesystem";
 import type { IMAGE_MIME_TYPES, MIME_TYPES } from "./constants";
 import type { ContextMenuItems } from "./components/ContextMenu";
 import type { SnapLine } from "./snapping";
-import type { Merge, MaybePromise, ValueOf, MakeBrand } from "./utility-types";
+import type { Merge, MaybePromise, ValueOf } from "./utility-types";
 import type { StoreActionType } from "./store";
 
 export type Point = Readonly<RoughPoint>;
@@ -176,7 +175,6 @@ export type StaticCanvasAppState = Readonly<
     exportScale: AppState["exportScale"];
     selectedElementsAreBeingDragged: AppState["selectedElementsAreBeingDragged"];
     gridSize: AppState["gridSize"];
-    gridStep: AppState["gridStep"];
     frameRendering: AppState["frameRendering"];
     currentHoveredFontFamily: AppState["currentHoveredFontFamily"];
   }
@@ -235,25 +233,9 @@ export interface AppState {
     element: NonDeletedExcalidrawElement;
     state: "hover" | "active";
   } | null;
-  /**
-   * for a newly created element
-   * - set on pointer down, updated during pointer move, used on pointer up
-   */
-  newElement: NonDeleted<ExcalidrawNonSelectionElement> | null;
-  /**
-   * for a single element that's being resized
-   * - set on pointer down when it's selected and the active tool is selection
-   */
+  draggingElement: NonDeletedExcalidrawElement | null;
   resizingElement: NonDeletedExcalidrawElement | null;
-  /**
-   * multiElement is for multi-point linear element that's created by clicking as opposed to dragging
-   * - when set and present, the editor will handle linear element creation logic accordingly
-   */
   multiElement: NonDeleted<ExcalidrawLinearElement> | null;
-  /**
-   * decoupled from newElement, dragging selection only creates selectionElement
-   * - set on pointer down, updated during pointer move
-   */
   selectionElement: NonDeletedExcalidrawElement | null;
   isBindingEnabled: boolean;
   startBoundElement: NonDeleted<ExcalidrawBindableElement> | null;
@@ -267,13 +249,8 @@ export interface AppState {
   };
   editingFrame: string | null;
   elementsToHighlight: NonDeleted<ExcalidrawElement>[] | null;
-  /**
-   * currently set for:
-   * - text elements while in wysiwyg
-   * - newly created linear elements while in line editor (not set for existing
-   *   elements in line editor)
-   * - and new images while being placed on canvas
-   */
+  // element being edited, but not necessarily added to elements array yet
+  // (e.g. text element when typing into the input)
   editingElement: NonDeletedExcalidrawElement | null;
   editingLinearElement: LinearElementEditor | null;
   activeTool: {
@@ -325,6 +302,14 @@ export interface AppState {
   openDialog:
     | null
     | { name: "imageExport" | "help" | "jsonExport" }
+    | {
+        name: "settings";
+        source:
+          | "tool" // when magicframe tool is selected
+          | "generation" // when magicframe generate button is clicked
+          | "settings"; // when AI settings dialog is explicitly invoked
+        tab: "text-to-diagram" | "diagram-to-code";
+      }
     | { name: "ttd"; tab: "text-to-diagram" | "mermaid" }
     | { name: "commandPalette" };
   /**
@@ -344,10 +329,7 @@ export interface AppState {
   toast: { message: string; closable?: boolean; duration?: number } | null;
   zenModeEnabled: boolean;
   theme: Theme;
-  /** grid cell px size */
-  gridSize: number;
-  gridStep: number;
-  gridModeEnabled: boolean;
+  gridSize: number | null;
   viewModeEnabled: boolean;
 
   /** top-most selected groups (i.e. does not include nested groups) */
@@ -611,7 +593,6 @@ export type AppProps = Merge<
  * in the app, eg Manager. Factored out into a separate type to keep DRY. */
 export type AppClassProperties = {
   props: AppProps;
-  state: AppState;
   interactiveCanvas: HTMLCanvasElement | null;
   /** static canvas */
   canvas: HTMLCanvasElement;
@@ -645,10 +626,6 @@ export type AppClassProperties = {
   onMagicframeToolSelect: App["onMagicframeToolSelect"];
   getName: App["getName"];
   dismissLinearEditor: App["dismissLinearEditor"];
-  flowChartCreator: App["flowChartCreator"];
-  getEffectiveGridSize: App["getEffectiveGridSize"];
-  setPlugins: App["setPlugins"];
-  plugins: App["plugins"];
 };
 
 export type PointerDownState = Readonly<{
@@ -829,15 +806,3 @@ export type EmbedsValidationStatus = Map<
 >;
 
 export type ElementsPendingErasure = Set<ExcalidrawElement["id"]>;
-
-export type PendingExcalidrawElements = ExcalidrawElement[];
-
-/** Runtime gridSize value. Null indicates disabled grid. */
-export type NullableGridSize =
-  | (AppState["gridSize"] & MakeBrand<"NullableGridSize">)
-  | null;
-
-export type GenerateDiagramToCode = (props: {
-  frame: ExcalidrawMagicFrameElement;
-  children: readonly ExcalidrawElement[];
-}) => MaybePromise<{ html: string }>;

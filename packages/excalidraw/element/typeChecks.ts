@@ -24,7 +24,6 @@ import type {
   ExcalidrawElbowArrowElement,
   PointBinding,
   FixedPointBinding,
-  ExcalidrawFlowchartNodeElement,
 } from "./types";
 
 export const isInitializedImageElement = (
@@ -176,23 +175,6 @@ export const isRectanguloidElement = (
   );
 };
 
-// TODO: Remove this when proper distance calculation is introduced
-// @see binding.ts:distanceToBindableElement()
-export const isRectangularElement = (
-  element?: ExcalidrawElement | null,
-): element is ExcalidrawBindableElement => {
-  return (
-    element != null &&
-    (element.type === "rectangle" ||
-      element.type === "image" ||
-      element.type === "text" ||
-      element.type === "iframe" ||
-      element.type === "embeddable" ||
-      element.type === "frame" ||
-      element.type === "magicframe")
-  );
-};
-
 export const isTextBindableContainer = (
   element: ExcalidrawElement | null,
   includeLocked = true,
@@ -235,16 +217,6 @@ export const isExcalidrawElement = (
       return false;
     }
   }
-};
-
-export const isFlowchartNodeElement = (
-  element: ExcalidrawElement,
-): element is ExcalidrawFlowchartNodeElement => {
-  return (
-    element.type === "rectangle" ||
-    element.type === "ellipse" ||
-    element.type === "diamond"
-  );
 };
 
 export const hasBoundTextElement = (

@@ -211,7 +211,7 @@ export const Hyperlink = ({
   const { x, y } = getCoordsForPopover(element, appState, elementsMap);
   if (
     appState.contextMenu ||
-    appState.selectedElementsAreBeingDragged ||
+    appState.draggingElement ||
     appState.resizingElement ||
     appState.isRotating ||
     appState.openMenu ||

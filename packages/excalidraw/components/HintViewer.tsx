@@ -1,7 +1,6 @@
 import { t } from "../i18n";
 import type { AppClassProperties, Device, UIAppState } from "../types";
 import {
-  isFlowchartNodeElement,
   isImageElement,
   isLinearElement,
   isTextBindableContainer,
@@ -11,8 +10,6 @@ import { getShortcutKey } from "../utils";
 import { isEraserActive } from "../appState";
 
 import "./HintViewer.scss";
-import { isNodeInFlowchart } from "../element/flowchart";
-import { isGridModeEnabled } from "../snapping";
 
 interface HintViewerProps {
   appState: UIAppState;
@@ -21,12 +18,7 @@ interface HintViewerProps {
   app: AppClassProperties;
 }
 
-const getHints = ({
-  appState,
-  isMobile,
-  device,
-  app,
-}: HintViewerProps): null | string | string[] => {
+const getHints = ({ appState, isMobile, device, app }: HintViewerProps) => {
   const { activeTool, isResizing, isRotating, lastPointerDownWith } = appState;
   const multiMode = appState.multiElement !== null;
 
@@ -93,7 +85,7 @@ const getHints = ({
 
   if (activeTool.type === "selection") {
     if (
-      appState.selectionElement &&
+      appState.draggingElement?.type === "selection" &&
       !selectedElements.length &&
       !appState.editingElement &&
       !appState.editingLinearElement
@@ -101,7 +93,7 @@ const getHints = ({
       return t("hints.deepBoxSelect");
     }
 
-    if (isGridModeEnabled(app) && appState.selectedElementsAreBeingDragged) {
+    if (appState.gridSize && appState.draggingElement) {
       return t("hints.disableSnapping");
     }
 
@@ -119,23 +111,9 @@ const getHints = ({
         return t("hints.lineEditor_info");
       }
       if (
-        !appState.newElement &&
-        !appState.selectedElementsAreBeingDragged &&
+        !appState.draggingElement &&
         isTextBindableContainer(selectedElements[0])
       ) {
-        if (isFlowchartNodeElement(selectedElements[0])) {
-          if (
-            isNodeInFlowchart(
-              selectedElements[0],
-              app.scene.getNonDeletedElementsMap(),
-            )
-          ) {
-            return [t("hints.bindTextToElement"), t("hints.createFlowchart")];
-          }
-
-          return [t("hints.bindTextToElement"), t("hints.createFlowchart")];
-        }
-
         return t("hints.bindTextToElement");
       }
     }
@@ -150,24 +128,17 @@ export const HintViewer = ({
   device,
   app,
 }: HintViewerProps) => {
-  const hints = getHints({
+  let hint = getHints({
     appState,
     isMobile,
     device,
     app,
   });
-
-  if (!hints) {
+  if (!hint) {
     return null;
   }
 
-  const hint = Array.isArray(hints)
-    ? hints
-        .map((hint) => {
-          return getShortcutKey(hint).replace(/\. ?$/, "");
-        })
-        .join(". ")
-    : getShortcutKey(hints);
+  hint = getShortcutKey(hint);
 
   return (
     <div className="HintViewer">

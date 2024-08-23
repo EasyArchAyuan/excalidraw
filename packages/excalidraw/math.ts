@@ -1,9 +1,4 @@
-import type {
-  NormalizedZoomValue,
-  NullableGridSize,
-  Point,
-  Zoom,
-} from "./types";
+import type { NormalizedZoomValue, Point, Zoom } from "./types";
 import {
   DEFAULT_ADAPTIVE_RADIUS,
   LINE_CONFIRM_THRESHOLD,
@@ -280,7 +275,7 @@ const doSegmentsIntersect = (p1: Point, q1: Point, p2: Point, q2: Point) => {
 export const getGridPoint = (
   x: number,
   y: number,
-  gridSize: NullableGridSize,
+  gridSize: number | null,
 ): [number, number] => {
   if (gridSize) {
     return [
@@ -707,9 +702,4 @@ export const aabbsOverlapping = (a: Bounds, b: Bounds) =>
 
 export const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max);
-};
-
-export const round = (value: number, precision: number) => {
-  const multiplier = Math.pow(10, precision);
-  return Math.round((value + Number.EPSILON) * multiplier) / multiplier;
 };

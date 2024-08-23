@@ -1,5 +1,4 @@
-import React from "react";
-import { act, fireEvent, queryByTestId } from "@testing-library/react";
+import { fireEvent, queryByTestId } from "@testing-library/react";
 import { Keyboard, Pointer, UI } from "../../tests/helpers/ui";
 import { getStepSizedValue } from "./utils";
 import {
@@ -25,12 +24,34 @@ import { getCommonBounds, isTextElement } from "../../element";
 import { API } from "../../tests/helpers/api";
 import { actionGroup } from "../../actions";
 import { isInGroup } from "../../groups";
+import React from "react";
 
 const { h } = window;
 const mouse = new Pointer("mouse");
 const renderStaticScene = vi.spyOn(StaticScene, "renderStaticScene");
 let stats: HTMLElement | null = null;
 let elementStats: HTMLElement | null | undefined = null;
+
+const editInput = (input: HTMLInputElement, value: string) => {
+  input.focus();
+  fireEvent.change(input, { target: { value } });
+  input.blur();
+};
+
+const getStatsProperty = (label: string) => {
+  const elementStats = UI.queryStats()?.querySelector("#elementStats");
+
+  if (elementStats) {
+    const properties = elementStats?.querySelector(".statsItem");
+    return (
+      properties?.querySelector?.(
+        `.drag-input-container[data-testid="${label}"]`,
+      ) || null
+    );
+  }
+
+  return null;
+};
 
 const testInputProperty = (
   element: ExcalidrawElement,
@@ -39,12 +60,12 @@ const testInputProperty = (
   initialValue: number,
   nextValue: number,
 ) => {
-  const input = UI.queryStatsProperty(label)?.querySelector(
+  const input = getStatsProperty(label)?.querySelector(
     ".drag-input",
   ) as HTMLInputElement;
   expect(input).toBeDefined();
   expect(input.value).toBe(initialValue.toString());
-  UI.updateInput(input, String(nextValue));
+  editInput(input, String(nextValue));
   if (property === "angle") {
     expect(element[property]).toBe(degreeToRadian(Number(nextValue)));
   } else if (property === "fontSize" && isTextElement(element)) {
@@ -89,7 +110,7 @@ describe("binding with linear elements", () => {
 
     await render(<Excalidraw handleKeyboardGlobally={true} />);
 
-    API.setElements([]);
+    h.elements = [];
 
     fireEvent.contextMenu(GlobalTestState.interactiveCanvas, {
       button: 2,
@@ -121,47 +142,47 @@ describe("binding with linear elements", () => {
 
   it("should remain bound to linear element on small position change", async () => {
     const linear = h.elements[1] as ExcalidrawLinearElement;
-    const inputX = UI.queryStatsProperty("X")?.querySelector(
+    const inputX = getStatsProperty("X")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
 
     expect(linear.startBinding).not.toBe(null);
     expect(inputX).not.toBeNull();
-    UI.updateInput(inputX, String("204"));
+    editInput(inputX, String("204"));
     expect(linear.startBinding).not.toBe(null);
   });
 
   it("should remain bound to linear element on small angle change", async () => {
     const linear = h.elements[1] as ExcalidrawLinearElement;
-    const inputAngle = UI.queryStatsProperty("A")?.querySelector(
+    const inputAngle = getStatsProperty("A")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
 
     expect(linear.startBinding).not.toBe(null);
-    UI.updateInput(inputAngle, String("1"));
+    editInput(inputAngle, String("1"));
     expect(linear.startBinding).not.toBe(null);
   });
 
   it("should unbind linear element on large position change", async () => {
     const linear = h.elements[1] as ExcalidrawLinearElement;
-    const inputX = UI.queryStatsProperty("X")?.querySelector(
+    const inputX = getStatsProperty("X")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
 
     expect(linear.startBinding).not.toBe(null);
     expect(inputX).not.toBeNull();
-    UI.updateInput(inputX, String("254"));
+    editInput(inputX, String("254"));
     expect(linear.startBinding).toBe(null);
   });
 
   it("should remain bound to linear element on small angle change", async () => {
     const linear = h.elements[1] as ExcalidrawLinearElement;
-    const inputAngle = UI.queryStatsProperty("A")?.querySelector(
+    const inputAngle = getStatsProperty("A")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
 
     expect(linear.startBinding).not.toBe(null);
-    UI.updateInput(inputAngle, String("45"));
+    editInput(inputAngle, String("45"));
     expect(linear.startBinding).toBe(null);
   });
 });
@@ -176,7 +197,7 @@ describe("stats for a generic element", () => {
 
     await render(<Excalidraw handleKeyboardGlobally={true} />);
 
-    API.setElements([]);
+    h.elements = [];
 
     fireEvent.contextMenu(GlobalTestState.interactiveCanvas, {
       button: 2,
@@ -210,14 +231,18 @@ describe("stats for a generic element", () => {
     expect(title?.lastChild?.nodeValue)?.toBe(t("stats.elementProperties"));
 
     // element type
-    const elementType = queryByTestId(elementStats!, "stats-element-type");
+    const elementType = elementStats?.querySelector(".elementType");
     expect(elementType).toBeDefined();
     expect(elementType?.lastChild?.nodeValue).toBe(t("element.rectangle"));
 
     // properties
+    const properties = elementStats?.querySelector(".statsItem");
+    expect(properties?.childNodes).toBeDefined();
     ["X", "Y", "W", "H", "A"].forEach((label) => () => {
       expect(
-        stats!.querySelector?.(`.drag-input-container[data-testid="${label}"]`),
+        properties?.querySelector?.(
+          `.drag-input-container[data-testid="${label}"]`,
+        ),
       ).toBeDefined();
     });
   });
@@ -238,18 +263,18 @@ describe("stats for a generic element", () => {
     const rectangle = h.elements[0];
     const rectangleId = rectangle.id;
 
-    const input = UI.queryStatsProperty("W")?.querySelector(
+    const input = getStatsProperty("W")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(input).toBeDefined();
     expect(input.value).toBe(rectangle.width.toString());
-    UI.updateInput(input, "123.123");
+    editInput(input, "123.123");
     expect(h.elements.length).toBe(1);
     expect(rectangle.id).toBe(rectangleId);
     expect(input.value).toBe("123.12");
     expect(rectangle.width).toBe(123.12);
 
-    UI.updateInput(input, "88.98766");
+    editInput(input, "88.98766");
     expect(input.value).toBe("88.99");
     expect(rectangle.width).toBe(88.99);
   });
@@ -268,11 +293,11 @@ describe("stats for a generic element", () => {
       rectangle.angle,
     );
 
-    const xInput = UI.queryStatsProperty("X")?.querySelector(
+    const xInput = getStatsProperty("X")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
 
-    const yInput = UI.queryStatsProperty("Y")?.querySelector(
+    const yInput = getStatsProperty("Y")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
 
@@ -362,7 +387,7 @@ describe("stats for a non-generic element", () => {
 
     await render(<Excalidraw handleKeyboardGlobally={true} />);
 
-    API.setElements([]);
+    h.elements = [];
 
     fireEvent.contextMenu(GlobalTestState.interactiveCanvas, {
       button: 2,
@@ -387,10 +412,9 @@ describe("stats for a non-generic element", () => {
     mouse.clickAt(20, 30);
     const textEditorSelector = ".excalidraw-textEditorContainer > textarea";
     const editor = await getTextEditor(textEditorSelector, true);
+    await new Promise((r) => setTimeout(r, 0));
     updateTextEditor(editor, "Hello!");
-    act(() => {
-      editor.blur();
-    });
+    editor.blur();
 
     const text = h.elements[0] as ExcalidrawTextElement;
     mouse.clickOn(text);
@@ -398,22 +422,22 @@ describe("stats for a non-generic element", () => {
     elementStats = stats?.querySelector("#elementStats");
 
     // can change font size
-    const input = UI.queryStatsProperty("F")?.querySelector(
+    const input = getStatsProperty("F")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(input).toBeDefined();
     expect(input.value).toBe(text.fontSize.toString());
-    UI.updateInput(input, "36");
+    editInput(input, "36");
     expect(text.fontSize).toBe(36);
 
     // cannot change width or height
-    const width = UI.queryStatsProperty("W")?.querySelector(".drag-input");
+    const width = getStatsProperty("W")?.querySelector(".drag-input");
     expect(width).toBeUndefined();
-    const height = UI.queryStatsProperty("H")?.querySelector(".drag-input");
+    const height = getStatsProperty("H")?.querySelector(".drag-input");
     expect(height).toBeUndefined();
 
     // min font size is 4
-    UI.updateInput(input, "0");
+    editInput(input, "0");
     expect(text.fontSize).not.toBe(0);
     expect(text.fontSize).toBe(4);
   });
@@ -425,8 +449,8 @@ describe("stats for a non-generic element", () => {
       x: 150,
       width: 150,
     });
-    API.setElements([frame]);
-    API.setAppState({
+    h.elements = [frame];
+    h.setState({
       selectedElementIds: {
         [frame.id]: true,
       },
@@ -437,7 +461,7 @@ describe("stats for a non-generic element", () => {
     expect(elementStats).toBeDefined();
 
     // cannot change angle
-    const angle = UI.queryStatsProperty("A")?.querySelector(".drag-input");
+    const angle = getStatsProperty("A")?.querySelector(".drag-input");
     expect(angle).toBeUndefined();
 
     // can change width or height
@@ -447,9 +471,9 @@ describe("stats for a non-generic element", () => {
 
   it("image element", () => {
     const image = API.createElement({ type: "image", width: 200, height: 100 });
-    API.setElements([image]);
+    h.elements = [image];
     mouse.clickOn(image);
-    API.setAppState({
+    h.setState({
       selectedElementIds: {
         [image.id]: true,
       },
@@ -484,15 +508,15 @@ describe("stats for a non-generic element", () => {
     mutateElement(container, {
       boundElements: [{ type: "text", id: text.id }],
     });
-    API.setElements([container, text]);
+    h.elements = [container, text];
 
     API.setSelectedElements([container]);
-    const fontSize = UI.queryStatsProperty("F")?.querySelector(
+    const fontSize = getStatsProperty("F")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(fontSize).toBeDefined();
 
-    UI.updateInput(fontSize, "40");
+    editInput(fontSize, "40");
 
     expect(text.fontSize).toBe(40);
   });
@@ -509,7 +533,7 @@ describe("stats for multiple elements", () => {
 
     await render(<Excalidraw handleKeyboardGlobally={true} />);
 
-    API.setElements([]);
+    h.elements = [];
 
     fireEvent.contextMenu(GlobalTestState.interactiveCanvas, {
       button: 2,
@@ -542,7 +566,7 @@ describe("stats for multiple elements", () => {
     mouse.down(-100, -100);
     mouse.up(125, 145);
 
-    API.setAppState({
+    h.setState({
       selectedElementIds: h.elements.reduce((acc, el) => {
         acc[el.id] = true;
         return acc;
@@ -551,25 +575,25 @@ describe("stats for multiple elements", () => {
 
     elementStats = stats?.querySelector("#elementStats");
 
-    const width = UI.queryStatsProperty("W")?.querySelector(
+    const width = getStatsProperty("W")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(width?.value).toBe("Mixed");
-    const height = UI.queryStatsProperty("H")?.querySelector(
+    const height = getStatsProperty("H")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(height?.value).toBe("Mixed");
-    const angle = UI.queryStatsProperty("A")?.querySelector(
+    const angle = getStatsProperty("A")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(angle.value).toBe("0");
 
-    UI.updateInput(width, "250");
+    editInput(width, "250");
     h.elements.forEach((el) => {
       expect(el.width).toBe(250);
     });
 
-    UI.updateInput(height, "450");
+    editInput(height, "450");
     h.elements.forEach((el) => {
       expect(el.height).toBe(450);
     });
@@ -581,10 +605,9 @@ describe("stats for multiple elements", () => {
     mouse.clickAt(20, 30);
     const textEditorSelector = ".excalidraw-textEditorContainer > textarea";
     const editor = await getTextEditor(textEditorSelector, true);
+    await new Promise((r) => setTimeout(r, 0));
     updateTextEditor(editor, "Hello!");
-    act(() => {
-      editor.blur();
-    });
+    editor.blur();
 
     UI.clickTool("rectangle");
     mouse.down();
@@ -596,12 +619,12 @@ describe("stats for multiple elements", () => {
       width: 150,
     });
 
-    API.setElements([...h.elements, frame]);
+    h.elements = [...h.elements, frame];
 
     const text = h.elements.find((el) => el.type === "text");
     const rectangle = h.elements.find((el) => el.type === "rectangle");
 
-    API.setAppState({
+    h.setState({
       selectedElementIds: h.elements.reduce((acc, el) => {
         acc[el.id] = true;
         return acc;
@@ -610,37 +633,37 @@ describe("stats for multiple elements", () => {
 
     elementStats = stats?.querySelector("#elementStats");
 
-    const width = UI.queryStatsProperty("W")?.querySelector(
+    const width = getStatsProperty("W")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(width).toBeDefined();
     expect(width.value).toBe("Mixed");
 
-    const height = UI.queryStatsProperty("H")?.querySelector(
+    const height = getStatsProperty("H")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(height).toBeDefined();
     expect(height.value).toBe("Mixed");
 
-    const angle = UI.queryStatsProperty("A")?.querySelector(
+    const angle = getStatsProperty("A")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(angle).toBeDefined();
     expect(angle.value).toBe("0");
 
-    const fontSize = UI.queryStatsProperty("F")?.querySelector(
+    const fontSize = getStatsProperty("F")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(fontSize).toBeDefined();
 
     // changing width does not affect text
-    UI.updateInput(width, "200");
+    editInput(width, "200");
 
     expect(rectangle?.width).toBe(200);
     expect(frame.width).toBe(200);
     expect(text?.width).not.toBe(200);
 
-    UI.updateInput(angle, "40");
+    editInput(angle, "40");
 
     const angleInRadian = degreeToRadian(40);
     expect(rectangle?.angle).toBeCloseTo(angleInRadian, 4);
@@ -663,7 +686,7 @@ describe("stats for multiple elements", () => {
         mouse.click();
       });
 
-      API.executeAction(actionGroup);
+      h.app.actionManager.executeAction(actionGroup);
     };
 
     createAndSelectGroup();
@@ -673,58 +696,58 @@ describe("stats for multiple elements", () => {
 
     elementStats = stats?.querySelector("#elementStats");
 
-    const x = UI.queryStatsProperty("X")?.querySelector(
+    const x = getStatsProperty("X")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
 
     expect(x).toBeDefined();
     expect(Number(x.value)).toBe(x1);
 
-    UI.updateInput(x, "300");
+    editInput(x, "300");
 
     expect(h.elements[0].x).toBe(300);
     expect(h.elements[1].x).toBe(400);
     expect(x.value).toBe("300");
 
-    const y = UI.queryStatsProperty("Y")?.querySelector(
+    const y = getStatsProperty("Y")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
 
     expect(y).toBeDefined();
     expect(Number(y.value)).toBe(y1);
 
-    UI.updateInput(y, "200");
+    editInput(y, "200");
 
     expect(h.elements[0].y).toBe(200);
     expect(h.elements[1].y).toBe(300);
     expect(y.value).toBe("200");
 
-    const width = UI.queryStatsProperty("W")?.querySelector(
+    const width = getStatsProperty("W")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(width).toBeDefined();
     expect(Number(width.value)).toBe(200);
 
-    const height = UI.queryStatsProperty("H")?.querySelector(
+    const height = getStatsProperty("H")?.querySelector(
       ".drag-input",
     ) as HTMLInputElement;
     expect(height).toBeDefined();
     expect(Number(height.value)).toBe(200);
 
-    UI.updateInput(width, "400");
+    editInput(width, "400");
 
     [x1, y1, x2, y2] = getCommonBounds(elementsInGroup);
     let newGroupWidth = x2 - x1;
 
     expect(newGroupWidth).toBeCloseTo(400, 4);
 
-    UI.updateInput(width, "300");
+    editInput(width, "300");
 
     [x1, y1, x2, y2] = getCommonBounds(elementsInGroup);
     newGroupWidth = x2 - x1;
     expect(newGroupWidth).toBeCloseTo(300, 4);
 
-    UI.updateInput(height, "500");
+    editInput(height, "500");
 
     [x1, y1, x2, y2] = getCommonBounds(elementsInGroup);
     const newGroupHeight = y2 - y1;

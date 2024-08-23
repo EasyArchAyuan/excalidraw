@@ -10,6 +10,7 @@ import {
   translatePoint,
 } from "../math";
 import { getSizeFromPoints } from "../points";
+import type Scene from "../scene/Scene";
 import type { Point } from "../types";
 import { isAnyTrue, toBrandedType, tupleToCoors } from "../utils";
 import {
@@ -36,10 +37,14 @@ import { isBindableElement, isRectanguloidElement } from "./typeChecks";
 import type {
   ExcalidrawElbowArrowElement,
   FixedPointBinding,
+  NonDeletedExcalidrawElement,
   NonDeletedSceneElementsMap,
-  SceneElementsMap,
 } from "./types";
-import type { ElementsMap, ExcalidrawBindableElement } from "./types";
+import type {
+  ElementsMap,
+  ExcalidrawBindableElement,
+  OrderedExcalidrawElement,
+} from "./types";
 
 type Node = {
   f: number;
@@ -62,7 +67,7 @@ const BASE_PADDING = 40;
 
 export const mutateElbowArrow = (
   arrow: ExcalidrawElbowArrowElement,
-  elementsMap: NonDeletedSceneElementsMap | SceneElementsMap,
+  scene: Scene,
   nextPoints: readonly Point[],
   offset?: Point,
   otherUpdates?: {
@@ -70,11 +75,15 @@ export const mutateElbowArrow = (
     endBinding?: FixedPointBinding | null;
   },
   options?: {
+    changedElements?: Map<string, OrderedExcalidrawElement>;
     isDragging?: boolean;
     disableBinding?: boolean;
     informMutation?: boolean;
   },
 ) => {
+  const elements = getAllElements(scene, options?.changedElements);
+  const elementsMap = getAllElementsMap(scene, options?.changedElements);
+
   const origStartGlobalPoint = translatePoint(nextPoints[0], [
     arrow.x + (offset ? offset[0] : 0),
     arrow.y + (offset ? offset[1] : 0),
@@ -90,9 +99,22 @@ export const mutateElbowArrow = (
   const endElement =
     arrow.endBinding &&
     getBindableElementForId(arrow.endBinding.elementId, elementsMap);
-  const [hoveredStartElement, hoveredEndElement] = options?.isDragging
-    ? getHoveredElements(origStartGlobalPoint, origEndGlobalPoint, elementsMap)
-    : [startElement, endElement];
+  const hoveredStartElement = options?.isDragging
+    ? getHoveredElementForBinding(
+        tupleToCoors(origStartGlobalPoint),
+        elements,
+        elementsMap,
+        true,
+      )
+    : startElement;
+  const hoveredEndElement = options?.isDragging
+    ? getHoveredElementForBinding(
+        tupleToCoors(origEndGlobalPoint),
+        elements,
+        elementsMap,
+        true,
+      )
+    : endElement;
   const startGlobalPoint = getGlobalPoint(
     arrow.startBinding?.fixedPoint,
     origStartGlobalPoint,
@@ -873,7 +895,7 @@ const normalizedArrowElementUpdate = (
   const offsetY = global[0][1];
 
   const points = global.map(
-    (point) => [point[0] - offsetX, point[1] - offsetY] as const,
+    (point, _idx) => [point[0] - offsetX, point[1] - offsetY] as const,
   );
 
   return {
@@ -913,11 +935,32 @@ const neighborIndexToHeading = (idx: number): Heading => {
   return HEADING_LEFT;
 };
 
+const getAllElementsMap = (
+  scene: Scene,
+  changedElements?: Map<string, OrderedExcalidrawElement>,
+): NonDeletedSceneElementsMap =>
+  changedElements
+    ? toBrandedType<NonDeletedSceneElementsMap>(
+        new Map([...scene.getNonDeletedElementsMap(), ...changedElements]),
+      )
+    : scene.getNonDeletedElementsMap();
+
+const getAllElements = (
+  scene: Scene,
+  changedElements?: Map<string, OrderedExcalidrawElement>,
+): readonly NonDeletedExcalidrawElement[] =>
+  changedElements
+    ? ([
+        ...scene.getNonDeletedElements(),
+        ...[...changedElements].map(([_, value]) => value),
+      ] as NonDeletedExcalidrawElement[])
+    : scene.getNonDeletedElements();
+
 const getGlobalPoint = (
   fixedPointRatio: [number, number] | undefined | null,
   initialPoint: Point,
   otherPoint: Point,
-  elementsMap: NonDeletedSceneElementsMap | SceneElementsMap,
+  elementsMap: NonDeletedSceneElementsMap,
   boundElement?: ExcalidrawBindableElement | null,
   hoveredElement?: ExcalidrawBindableElement | null,
   isDragging?: boolean,
@@ -973,7 +1016,7 @@ const getSnapPoint = (
 const getBindPointHeading = (
   point: Point,
   otherPoint: Point,
-  elementsMap: NonDeletedSceneElementsMap | SceneElementsMap,
+  elementsMap: NonDeletedSceneElementsMap,
   hoveredElement: ExcalidrawBindableElement | null | undefined,
   origPoint: Point,
 ) =>
@@ -991,30 +1034,3 @@ const getBindPointHeading = (
     elementsMap,
     origPoint,
   );
-
-const getHoveredElements = (
-  origStartGlobalPoint: Point,
-  origEndGlobalPoint: Point,
-  elementsMap: NonDeletedSceneElementsMap | SceneElementsMap,
-) => {
-  // TODO: Might be a performance bottleneck and the Map type
-  // remembers the insertion order anyway...
-  const nonDeletedSceneElementsMap = toBrandedType<NonDeletedSceneElementsMap>(
-    new Map([...elementsMap].filter((el) => !el[1].isDeleted)),
-  );
-  const elements = Array.from(elementsMap.values());
-  return [
-    getHoveredElementForBinding(
-      tupleToCoors(origStartGlobalPoint),
-      elements,
-      nonDeletedSceneElementsMap,
-      true,
-    ),
-    getHoveredElementForBinding(
-      tupleToCoors(origEndGlobalPoint),
-      elements,
-      nonDeletedSceneElementsMap,
-      true,
-    ),
-  ];
-};

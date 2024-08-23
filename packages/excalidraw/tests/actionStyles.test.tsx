@@ -1,4 +1,3 @@
-import React from "react";
 import { Excalidraw } from "../index";
 import { CODES } from "../keys";
 import { API } from "../tests/helpers/api";

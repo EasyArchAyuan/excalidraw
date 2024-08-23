@@ -20,7 +20,7 @@ import {
   type TransformHandleDirection,
 } from "../../element/transformHandles";
 import { KEYS } from "../../keys";
-import { act, fireEvent, GlobalTestState, screen } from "../test-utils";
+import { fireEvent, GlobalTestState, screen } from "../test-utils";
 import { mutateElement } from "../../element/mutateElement";
 import { API } from "./api";
 import {
@@ -124,10 +124,6 @@ export class Keyboard {
     Keyboard.withModifierKeys({ ctrl: true, shift: true }, () => {
       Keyboard.keyPress("z");
     });
-  };
-
-  static exitTextEditor = (textarea: HTMLTextAreaElement) => {
-    fireEvent.keyDown(textarea, { key: KEYS.ESCAPE });
   };
 }
 
@@ -303,16 +299,14 @@ const transform = (
   keyboardModifiers: KeyboardModifiers = {},
 ) => {
   const elements = Array.isArray(element) ? element : [element];
-  act(() => {
-    h.setState({
-      selectedElementIds: elements.reduce(
-        (acc, e) => ({
-          ...acc,
-          [e.id]: true,
-        }),
-        {},
-      ),
-    });
+  h.setState({
+    selectedElementIds: elements.reduce(
+      (acc, e) => ({
+        ...acc,
+        [e.id]: true,
+      }),
+      {},
+    ),
   });
   let handleCoords: TransformHandle | undefined;
   if (elements.length === 1) {
@@ -493,9 +487,7 @@ export class UI {
     const origElement = h.elements[h.elements.length - 1] as any;
 
     if (angle !== 0) {
-      act(() => {
-        mutateElement(origElement, { angle });
-      });
+      mutateElement(origElement, { angle });
     }
 
     return proxy(origElement);
@@ -519,9 +511,8 @@ export class UI {
     }
 
     fireEvent.input(editor, { target: { value: text } });
-    act(() => {
-      editor.blur();
-    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    editor.blur();
 
     return isTextElement(element)
       ? element
@@ -531,14 +522,6 @@ export class UI {
           ] as ExcalidrawTextElementWithContainer,
         );
   }
-
-  static updateInput = (input: HTMLInputElement, value: string | number) => {
-    act(() => {
-      input.focus();
-      fireEvent.change(input, { target: { value: String(value) } });
-      input.blur();
-    });
-  };
 
   static resize(
     element: ExcalidrawElement | ExcalidrawElement[],
@@ -579,23 +562,7 @@ export class UI {
 
   static queryStats = () => {
     return GlobalTestState.renderResult.container.querySelector(
-      ".exc-stats",
+      ".Stats",
     ) as HTMLElement | null;
-  };
-
-  static queryStatsProperty = (label: string) => {
-    const elementStats = UI.queryStats()?.querySelector("#elementStats");
-
-    expect(elementStats).not.toBeNull();
-
-    if (elementStats) {
-      return (
-        elementStats?.querySelector(
-          `.exc-stats__row .drag-input-container[data-testid="${label}"]`,
-        ) || null
-      );
-    }
-
-    return null;
   };
 }

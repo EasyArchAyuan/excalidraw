@@ -2,9 +2,9 @@ import { defineConfig } from "vitest/config";
 import { woff2BrowserPlugin } from "./scripts/woff2/woff2-vite-plugins";
 
 export default defineConfig({
-  // @ts-ignore
-  plugins: [woff2BrowserPlugin()],
-  base: './', 
+  plugins: [
+    woff2BrowserPlugin(),
+  ],
   test: {
     setupFiles: ["./setupTests.ts"],
     globals: true,

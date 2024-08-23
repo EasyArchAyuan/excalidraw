@@ -738,7 +738,6 @@ export const getElementBounds = (
 
 export const getCommonBounds = (
   elements: readonly ExcalidrawElement[],
-  elementsMap?: ElementsMap,
 ): Bounds => {
   if (!elements.length) {
     return [0, 0, 0, 0];
@@ -749,11 +748,10 @@ export const getCommonBounds = (
   let minY = Infinity;
   let maxY = -Infinity;
 
+  const elementsMap = arrayToMap(elements);
+
   elements.forEach((element) => {
-    const [x1, y1, x2, y2] = getElementBounds(
-      element,
-      elementsMap || arrayToMap(elements),
-    );
+    const [x1, y1, x2, y2] = getElementBounds(element, elementsMap);
     minX = Math.min(minX, x1);
     minY = Math.min(minY, y1);
     maxX = Math.max(maxX, x2);

@@ -1,4 +1,3 @@
-import React from "react";
 import { vi } from "vitest";
 import ReactDOM from "react-dom";
 import { render, waitFor, GlobalTestState } from "./test-utils";
@@ -280,7 +279,7 @@ describe("pasting & frames", () => {
     });
     const rect = API.createElement({ type: "rectangle" });
 
-    API.setElements([frame]);
+    h.elements = [frame];
 
     const clipboardJSON = await serializeAsClipboardJSON({
       elements: [rect],
@@ -319,7 +318,7 @@ describe("pasting & frames", () => {
       y: 100,
     });
 
-    API.setElements([frame]);
+    h.elements = [frame];
 
     const clipboardJSON = await serializeAsClipboardJSON({
       elements: [rect, rect2],
@@ -362,7 +361,7 @@ describe("pasting & frames", () => {
       groupIds: ["g1"],
     });
 
-    API.setElements([frame]);
+    h.elements = [frame];
 
     const clipboardJSON = await serializeAsClipboardJSON({
       elements: [rect, rect2],
@@ -413,7 +412,7 @@ describe("pasting & frames", () => {
       frameId: frame2.id,
     });
 
-    API.setElements([frame]);
+    h.elements = [frame];
 
     const clipboardJSON = await serializeAsClipboardJSON({
       elements: [rect, rect2, frame2],

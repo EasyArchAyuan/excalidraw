@@ -321,7 +321,6 @@ export const shouldShowBoundingBox = (
   }
   const element = elements[0];
   if (isElbowArrow(element)) {
-    // Elbow arrows cannot be resized as single selected elements
     return false;
   }
   if (!isLinearElement(element)) {

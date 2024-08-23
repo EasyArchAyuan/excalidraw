@@ -11,8 +11,6 @@ import type {
   ExcalidrawTextElementWithContainer,
   ExcalidrawImageElement,
   ElementsMap,
-  NonDeletedSceneElementsMap,
-  SceneElementsMap,
 } from "./types";
 import type { Mutable } from "../utility-types";
 import {
@@ -71,7 +69,7 @@ export const transformElements = (
   originalElements: PointerDownState["originalElements"],
   transformHandleType: MaybeTransformHandleType,
   selectedElements: readonly NonDeletedExcalidrawElement[],
-  elementsMap: SceneElementsMap,
+  elementsMap: ElementsMap,
   shouldRotateWithDiscreteAngle: boolean,
   shouldResizeFromCenter: boolean,
   shouldMaintainAspectRatio: boolean,
@@ -79,6 +77,7 @@ export const transformElements = (
   pointerY: number,
   centerX: number,
   centerY: number,
+  scene: Scene,
 ) => {
   if (selectedElements.length === 1) {
     const [element] = selectedElements;
@@ -91,7 +90,7 @@ export const transformElements = (
           pointerY,
           shouldRotateWithDiscreteAngle,
         );
-        updateBoundElements(element, elementsMap);
+        updateBoundElements(element, elementsMap, scene);
       }
     } else if (isTextElement(element) && transformHandleType) {
       resizeSingleTextElement(
@@ -103,7 +102,7 @@ export const transformElements = (
         pointerX,
         pointerY,
       );
-      updateBoundElements(element, elementsMap);
+      updateBoundElements(element, elementsMap, scene);
     } else if (transformHandleType) {
       resizeSingleElement(
         originalElements,
@@ -114,6 +113,7 @@ export const transformElements = (
         shouldResizeFromCenter,
         pointerX,
         pointerY,
+        scene,
       );
     }
 
@@ -129,6 +129,7 @@ export const transformElements = (
         shouldRotateWithDiscreteAngle,
         centerX,
         centerY,
+        scene,
       );
       return true;
     } else if (transformHandleType) {
@@ -141,6 +142,7 @@ export const transformElements = (
         shouldMaintainAspectRatio,
         pointerX,
         pointerY,
+        scene,
       );
       return true;
     }
@@ -432,12 +434,22 @@ export const resizeSingleElement = (
   originalElements: PointerDownState["originalElements"],
   shouldMaintainAspectRatio: boolean,
   element: NonDeletedExcalidrawElement,
-  elementsMap: SceneElementsMap,
+  elementsMap: ElementsMap,
   transformHandleDirection: TransformHandleDirection,
   shouldResizeFromCenter: boolean,
   pointerX: number,
   pointerY: number,
+  scene: Scene,
 ) => {
+  // Elbow arrows cannot be resized when bound on either end
+  if (
+    isArrowElement(element) &&
+    isElbowArrow(element) &&
+    (element.startBinding || element.endBinding)
+  ) {
+    return;
+  }
+
   const stateAtResizeStart = originalElements.get(element.id)!;
   // Gets bounds corners
   const [x1, y1, x2, y2] = getResizedElementAbsoluteCoords(
@@ -707,7 +719,7 @@ export const resizeSingleElement = (
   ) {
     mutateElement(element, resizedElement);
 
-    updateBoundElements(element, elementsMap, {
+    updateBoundElements(element, elementsMap, scene, {
       oldSize: {
         width: stateAtResizeStart.width,
         height: stateAtResizeStart.height,
@@ -731,12 +743,13 @@ export const resizeSingleElement = (
 export const resizeMultipleElements = (
   originalElements: PointerDownState["originalElements"],
   selectedElements: readonly NonDeletedExcalidrawElement[],
-  elementsMap: NonDeletedSceneElementsMap | SceneElementsMap,
+  elementsMap: ElementsMap,
   transformHandleType: TransformHandleDirection,
   shouldResizeFromCenter: boolean,
   shouldMaintainAspectRatio: boolean,
   pointerX: number,
   pointerY: number,
+  scene: Scene,
 ) => {
   // map selected elements to the original elements. While it never should
   // happen that pointerDownState.originalElements won't contain the selected
@@ -970,19 +983,12 @@ export const resizeMultipleElements = (
     mutateElement(element, update, false);
 
     if (isArrowElement(element) && isElbowArrow(element)) {
-      mutateElbowArrow(
-        element,
-        elementsMap,
-        element.points,
-        undefined,
-        undefined,
-        {
-          informMutation: false,
-        },
-      );
+      mutateElbowArrow(element, scene, element.points, undefined, undefined, {
+        informMutation: false,
+      });
     }
 
-    updateBoundElements(element, elementsMap, {
+    updateBoundElements(element, elementsMap, scene, {
       simultaneouslyUpdated: elementsToUpdate,
       oldSize: { width: oldWidth, height: oldHeight },
     });
@@ -1007,12 +1013,13 @@ export const resizeMultipleElements = (
 const rotateMultipleElements = (
   originalElements: PointerDownState["originalElements"],
   elements: readonly NonDeletedExcalidrawElement[],
-  elementsMap: SceneElementsMap,
+  elementsMap: ElementsMap,
   pointerX: number,
   pointerY: number,
   shouldRotateWithDiscreteAngle: boolean,
   centerX: number,
   centerY: number,
+  scene: Scene,
 ) => {
   let centerAngle =
     (5 * Math.PI) / 2 + Math.atan2(pointerY - centerY, pointerX - centerX);
@@ -1039,7 +1046,7 @@ const rotateMultipleElements = (
 
       if (isArrowElement(element) && isElbowArrow(element)) {
         const points = getArrowLocalFixedPoints(element, elementsMap);
-        mutateElbowArrow(element, elementsMap, points);
+        mutateElbowArrow(element, scene, points);
       } else {
         mutateElement(
           element,
@@ -1052,7 +1059,7 @@ const rotateMultipleElements = (
         );
       }
 
-      updateBoundElements(element, elementsMap, {
+      updateBoundElements(element, elementsMap, scene, {
         simultaneouslyUpdated: elements,
       });
 

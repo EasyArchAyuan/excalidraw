@@ -1,4 +1,3 @@
-import React from "react";
 import {
   mockBoundingClientRect,
   render,
@@ -99,13 +98,13 @@ describe("appState", () => {
 
     const zoom = h.state.zoom.value;
     // Assert we scroll properly when zoomed in
-    API.setAppState({ zoom: { value: (zoom * 1.1) as typeof zoom } });
+    h.setState({ zoom: { value: (zoom * 1.1) as typeof zoom } });
     scrollTest();
     // Assert we scroll properly when zoomed out
-    API.setAppState({ zoom: { value: (zoom * 0.9) as typeof zoom } });
+    h.setState({ zoom: { value: (zoom * 0.9) as typeof zoom } });
     scrollTest();
     // Assert we scroll properly with normal zoom
-    API.setAppState({ zoom: { value: zoom } });
+    h.setState({ zoom: { value: zoom } });
     scrollTest();
     restoreOriginalGetBoundingClientRect();
   });

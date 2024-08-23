@@ -2,6 +2,7 @@ import { vi } from "vitest";
 import {
   act,
   render,
+  updateSceneData,
   waitFor,
 } from "../../packages/excalidraw/tests/test-utils";
 import ExcalidrawApp from "../App";
@@ -87,12 +88,12 @@ describe("collaboration", () => {
     const rect1 = API.createElement({ ...rect1Props });
     const rect2 = API.createElement({ ...rect2Props });
 
-    API.updateScene({
+    updateSceneData({
       elements: syncInvalidIndices([rect1, rect2]),
       storeAction: StoreAction.CAPTURE,
     });
 
-    API.updateScene({
+    updateSceneData({
       elements: syncInvalidIndices([
         rect1,
         newElementWith(h.elements[1], { isDeleted: true }),
@@ -142,7 +143,7 @@ describe("collaboration", () => {
     });
 
     // simulate force deleting the element remotely
-    API.updateScene({
+    updateSceneData({
       elements: syncInvalidIndices([rect1]),
       storeAction: StoreAction.UPDATE,
     });
@@ -177,7 +178,7 @@ describe("collaboration", () => {
     act(() => h.app.actionManager.executeAction(undoAction));
 
     // simulate local update
-    API.updateScene({
+    updateSceneData({
       elements: syncInvalidIndices([
         h.elements[0],
         newElementWith(h.elements[1], { x: 100 }),
@@ -215,7 +216,7 @@ describe("collaboration", () => {
     });
 
     // simulate force deleting the element remotely
-    API.updateScene({
+    updateSceneData({
       elements: syncInvalidIndices([rect1]),
       storeAction: StoreAction.UPDATE,
     });

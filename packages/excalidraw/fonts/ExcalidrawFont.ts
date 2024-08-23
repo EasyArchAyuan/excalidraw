@@ -123,24 +123,24 @@ export class ExcalidrawFont implements Font {
     return urls;
   }
 
-private static getFormat(url: URL) {
-  try {
-    const pathname = new URL(url).pathname;
-    const parts = pathname.split(".");
+  private static getFormat(url: URL) {
+    try {
+      const pathname = new URL(url).pathname;
+      const parts = pathname.split(".");
 
-    if (parts.length === 1) {
+      if (parts.length === 1) {
+        return "";
+      }
+      // ttf is not a valid format, so we are converting it to truetype
+      let type = parts.pop()
+      if (type === 'ttf') {
+        type = 'truetype'
+      }
+      return `format('${type}')`;
+    } catch (error) {
       return "";
     }
-    // ttf is not a valid format, so we are converting it to truetype
-    let type = parts.pop()
-    if (type === 'ttf') {
-      type = 'truetype'
-    }
-    return `format('${type}')`;
-  } catch (error) {
-    return "";
   }
-}
 
   private static normalizeBaseUrl(baseUrl: string) {
     let result = baseUrl;
