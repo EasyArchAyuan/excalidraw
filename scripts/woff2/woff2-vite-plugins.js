@@ -110,6 +110,14 @@ module.exports.woff2BrowserPlugin = () => {
         type="font/woff2"
         crossorigin="anonymous"
       />
+     <link
+  rel="preload"
+  href="/Yutong.ttf"
+  as="font"
+  type="font/ttf"
+  crossorigin="anonymous"
+     />
+
       <link
         rel="preload"
         href="${OSS_FONTS_CDN}Virgil-Regular-hO16qHwV.woff2"

@@ -24,6 +24,8 @@ import Cascadia from "./assets/CascadiaCode-Regular.woff2";
 import ComicShanns from "./assets/ComicShanns-Regular.woff2";
 import LiberationSans from "./assets/LiberationSans-Regular.woff2";
 
+import Yutong from "./assets/Yutong.ttf";
+
 import LilitaLatin from "https://fonts.gstatic.com/s/lilitaone/v15/i7dPIFZ9Zz-WBtRtedDbYEF8RXi4EwQ.woff2";
 import LilitaLatinExt from "https://fonts.gstatic.com/s/lilitaone/v15/i7dPIFZ9Zz-WBtRtedDbYE98RXi4EwSsbg.woff2";
 
@@ -209,7 +211,9 @@ export class Fonts {
 
     // TODO: let's tweak this once we know how `register` will be exposed as part of the custom fonts API
     const _register = register.bind(fonts);
-
+    _register("Yutong", FONT_METADATA[FONT_FAMILY.Excalifont], {
+     uri: Yutong,
+    });
     _register("Virgil", FONT_METADATA[FONT_FAMILY.Virgil], {
       uri: Virgil,
     });
